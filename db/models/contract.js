@@ -26,7 +26,7 @@ const initContract = (sequelize, Types) =>{
       updatedAt: 'updated_at'
     }
   );
-  return Contract;s
+  return Contract;
 };
 
 export default initContract(connection, DataTypes);
