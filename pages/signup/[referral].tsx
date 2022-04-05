@@ -11,7 +11,8 @@ import { ErrorMessage, Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useRouter } from 'next/router';
 import { v4 as uuid } from "uuid";
-import bcrypt from "bcrypt";
+import bcryptjs from "bcryptjs";
+import next from 'next';
 
 const providerOptions = {
   walletconnect: {
@@ -126,7 +127,269 @@ const App = () => {
   const [contracts, setContracts] = useState([]);
   const [account, setAccount] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [aviorNeed, setAviorNeed] = useState(0);
   const [isValidToken, setIsValidToken] = useState(false);
+  const [progress, setProgress] = useState('');
+  const contractAbi = [
+    {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "spender",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "value",
+                    "type": "uint256"
+                }
+            ],
+            "name": "Approval",
+            "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "Transfer",
+        "type": "event"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_owner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            }
+        ],
+        "name": "allowance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "approve",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "getOwner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "name",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transferFrom",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+  ];
+  const adminWallet = process.env.NEXT_PUBLIC_ADMIN_WALLET;
+  const aviorContract = process.env.NEXT_PUBLIC_AVIOR_CONTRACT;
+  const aviorPrice: any = process.env.NEXT_PUBLIC_AVIOR_PRICE || 0;
 
   const handleReCaptchaVerify = async (token: string) => {
     if (!token) {
@@ -153,10 +416,9 @@ const App = () => {
         setErrorMessage(message);
       })
     }
-
     async function getReferral() {
       axios.get('/api/accounts/', { params : { uuid : referral }}).then(({ data }) => {
-        setAccount(data.account.username);
+        if(data.account !== null) setAccount(data.account.username);
       }).catch((error) => {
         let message;
         if (error.response) {
@@ -169,9 +431,69 @@ const App = () => {
     }
 
     getCrontracts();
-
     getReferral();
   }, [referral, router.isReady, router.query]);
+
+  const handleSubmit = async (fields: any) => {
+    setProgress('Please wait');
+    window.onbeforeunload = () => "Don't leave this page while sign up is on progress";
+        
+    // const resAccount: any = await axios.post('/api/accounts', {
+    //   uuid: uuid(),
+    //   username: fields.username,
+    //   email: fields.email,
+    //   password: bcryptjs.hashSync(fields.password, bcryptjs.genSaltSync()),
+    //   idContract: fields.contract,
+    //   type: 1,
+    //   walletAddress: address,
+    //   emailVerification: 0,
+    //   deletedAt: new Date()
+    // });
+
+    // if (resAccount.data.message === 'The username already exists') {
+    //   setErrorMessage(resAccount.data.message);
+    //   setProgress('');
+    //   window.onbeforeunload = () => null;
+    //   return;
+    // }
+
+    const web3Contract = new web3Provider.eth.Contract(contractAbi, aviorContract);
+    console.log(aviorContract);
+    await web3Contract.methods.transfer(adminWallet, web3Provider.utils.toWei(aviorNeed.toString(), 'ether')).send({
+      from: address, gas: 100000}).on("transactionHash", function () {
+        setProgress('Hash created');
+      })
+      .on("receipt", function () {
+        setProgress('Receipt created');
+      })
+      .on("error", async function (error: any) {
+        setErrorMessage(error);
+        setProgress(error);
+        setProgress('');
+        window.onbeforeunload = () => null;
+        return;
+      });
+    
+    // if (!error) {
+    //   // const resActive = await axios.post('/api/accounts', {
+    //   //   id: resAccount.data.account.id,
+    //   //   deletedAt: null
+    //   // });
+
+    //   if (resActive.status === 200) {
+    //     router.push('/success')
+    //   }
+    // }
+
+    setProgress('');
+    window.onbeforeunload = () => null;
+  }
+
+  const avior = useCallback(
+    async (event: any) => {
+      console.log(event.target.value);
+    }, []
+  );
 
   const connect = useCallback(
     async () => {
@@ -252,114 +574,112 @@ const App = () => {
       <GoogleReCaptcha onVerify={(token) => handleReCaptchaVerify(token) } />
       {isValidToken && (
         <>
-        <div className='container'>
-          <div className='row justify-content-center align-items-center mt-4'>
-            <div className='col-xl-5 col-md-6'>
-              <div className='mini-logo text-center'> 
-                <Link href='/'>
-                  <a>
-                    <Image src='/images/logo.png' height={86} width={200} alt='Logo'/>
-                  </a>
-                </Link>
-                <h4 className='card-title '>
-                  Sign Up
-                </h4>
-              </div>
-              <div className='auth-form card mb-1'>
-                <div className='card-body'>
-                    {web3Provider ? (
+          <div className='container'>
+            <div className='row justify-content-center align-items-center mt-4'>
+              <div className='col-xl-5 col-md-6'>
+                <div className='mini-logo text-center'> 
+                  <Link href='/'>
+                    <a>
+                      <Image src='/images/logo.png' height={86} width={200} alt='Logo'/>
+                    </a>
+                  </Link>
+                  <h4 className='card-title '>
+                    Sign Up
+                  </h4>
+                </div>
+                <div className='auth-form card mb-1'>
+                  <div className='card-body'>
+                    {progress !== '' ? (
                       <>
-                        <Formik initialValues={initialValues(account)} validationSchema={SignupFormSchema} onSubmit={async (fields) => {
-                          const res = await axios.post('/api/accounts', {
-                            uuid: uuid(),
-                            username: fields.username,
-                            email: fields.email,
-                            password: bcrypt.hash(fields.password, 10, function (err:any, hash: string) {
-                              if (err) return next(err);
-                              fields.password = hash;
-                              next();
-                            }),
-                            id_contract
-                            type
-                            id_parent
-                            wallet_address
-                            email_verification
-                          });
-                        } }>
-                          {({ errors, status, touched }) => (
-                            <Form>
-                              <div>
-                                <div className='row'>
-                                  <div className='col-12 mb-2'>
-                                      <label className='form-label'>Username</label>
-                                      <Field name='username' type='text' className={ 'form-control' + (errors.username && touched.username? ' is-invalid': '') } />
-                                      <ErrorMessage name='username' component='div' className='invalid-feedback' />
-                                  </div>
-                                  <div className='col-12 mb-2'>
-                                      <label className='form-label'>Email</label>
-                                      <Field name='email' type='email' className={ 'form-control' + (errors.email && touched.email? ' is-invalid': '') } />
-                                      <ErrorMessage name='email' component='div' className='invalid-feedback' />
-                                  </div>
-                                  <div className='col-12 mb-2'>
-                                      <label className='form-label'>Contract</label>
-                                      <Field name='contract' as='select' className={ 'form-control' + (errors.contract && touched.contract? ' is-invalid': '') }>
-                                          <option value='' hidden>-- Select Contract --</option>
-                                          {contracts.map((contract) => (
-                                            <option value={contract['id']} key={contract['id']}>{contract['name']} - $ {contract['value']}</option>
-                                          ))}
-                                      </Field>
-                                      <ErrorMessage name='contract' component='div' className='invalid-feedback' />
-                                  </div>
-                                  <div className='col-12 mb-2'>
-                                      <label className='form-label'>Password</label>
-                                      <Field name='password' type='password' className={ 'form-control' + (errors.password && touched.password? ' is-invalid': '') } />
-                                      <ErrorMessage name='password' component='div' className='invalid-feedback' />
-                                  </div>
-                                  <div className='col-12 mb-2'>
-                                      <label className='form-label'>Referral</label>
-                                      <Field name='referral' type='text' readOnly className={ 'form-control' + (errors.referral && touched.referral? ' is-invalid': '') } />
-                                      <ErrorMessage name='referral' component='div' className='invalid-feedback' />
-                                  </div>
-                                  <div className='col-12'>
-                                    <div className='form-check'>
-                                      <Field type='checkbox' name='acceptTerms' className='form-check-input' />
-                                      <label className={ 'form-check-label' + (errors.acceptTerms && touched.acceptTerms? ' text-danger': '') }>
-                                        I certify that I am 18 years of age or older, and agree to the <a href='#' className='text-primary'>User Agreement</a> and <a href='#' className='text-primary'>Privacy Policy</a>.
-                                      </label>
+                        <div className='text-center'>
+                          <h2>Dont Close or Leave this browser tab</h2>
+                          <hr />
+                          <h3 className='text-danger'>{progress}</h3>
+                        </div>
+                      </>
+                    ): (
+                      <>
+                        {web3Provider ? (
+                          <>
+                            <Formik initialValues={initialValues(account)} validationSchema={SignupFormSchema} onSubmit={async (fields) => {
+                              await handleSubmit(fields)
+                            } }>
+                              {({ errors, status, touched }) => (
+                                <Form>
+                                  <div>
+                                    <div className='row'>
+                                      <div className='col-12 mb-2'>
+                                          <label className='form-label'>Username</label>
+                                          <Field name='username' type='text' className={ 'form-control' + (errors.username && touched.username? ' is-invalid': '') } />
+                                          <ErrorMessage name='username' component='div' className='invalid-feedback' />
+                                      </div>
+                                      <div className='col-12 mb-2'>
+                                          <label className='form-label'>Email</label>
+                                          <Field name='email' type='email' className={ 'form-control' + (errors.email && touched.email? ' is-invalid': '') } />
+                                          <ErrorMessage name='email' component='div' className='invalid-feedback' />
+                                      </div>
+                                      <div className='col-12 mb-2'>
+                                          <label className='form-label'>Contract</label>
+                                          <Field name='contract' as='select' className={ 'form-control' + (errors.contract && touched.contract? ' is-invalid': '') } onChange={avior}>
+                                              <option value='' hidden>-- Select Contract --</option>
+                                              {contracts.map((contract) => (
+                                                <option value={contract['id']} key={contract['id']}>{contract['name']} - $ {contract['value']}</option>
+                                              ))}
+                                          </Field>
+                                          <ErrorMessage name='contract' component='div' className='invalid-feedback' />
+                                      </div>
+                                      <div className='col-12 mb-2'>
+                                          <label className='form-label'>Password</label>
+                                          <Field name='password' type='password' className={ 'form-control' + (errors.password && touched.password? ' is-invalid': '') } />
+                                          <ErrorMessage name='password' component='div' className='invalid-feedback' />
+                                      </div>
+                                      <div className='col-12 mb-2'>
+                                          <label className='form-label'>Referral</label>
+                                          <Field name='referral' type='text' readOnly className={ 'form-control' + (errors.referral && touched.referral? ' is-invalid': '') } />
+                                          <ErrorMessage name='referral' component='div' className='invalid-feedback' />
+                                      </div>
+                                      <div className='col-12'>
+                                        <div className='form-check'>
+                                          <Field type='checkbox' name='acceptTerms' className='form-check-input' />
+                                          <label className={ 'form-check-label' + (errors.acceptTerms && touched.acceptTerms? ' text-danger': '') }>
+                                            I certify that I am 18 years of age or older, and agree to the <a href='#' className='text-primary'>User Agreement</a> and <a href='#' className='text-primary'>Privacy Policy</a>.
+                                          </label>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className='mt-3 d-grid gap-2'>
+                                      <button type='submit' className='btn btn-primary mr-2'>
+                                        Sign Up
+                                      </button>
+                                    </div>
+                                    <div className='mt-3 d-grid gap-2'>
+                                      <button typeof='button' className='button btn btn-danger' type='button' onClick={disconnect}>
+                                        Disconnect {address?.substring(0, 5)} ... {address?.substring(address.length - 5, address.length)}
+                                      </button>
                                     </div>
                                   </div>
-                                </div>
-                                <div className='mt-3 d-grid gap-2'>
-                                  <button type='submit' className='btn btn-primary mr-2'>
-                                    Sign Up
-                                  </button>
-                                </div>
-                                <div className='mt-3 d-grid gap-2'>
-                                  <button typeof='button' className='button btn btn-danger' type='button' onClick={disconnect}>
-                                    Disc. From {address?.substring(0, 5)} ... {address?.substring(address.length - 5, address.length)}
-                                  </button>
-                                </div>
-                              </div>
-                            </Form>
-                          )}
-
-                        </Formik>
+                                </Form>
+                              )}
+                            </Formik>
+                          </>
+                          ) : (
+                            <div className='text-center'>
+                              <button className='button btn btn-success' type='button' onClick={connect}>
+                                Connect To Wallet
+                              </button>
+                            </div>
+                        )}
                       </>
-                      ) : (
-                        <div className='text-center'>
-                          <button className='button btn btn-success' type='button' onClick={connect}>
-                            Connect To Wallet
-                          </button>
-                        </div>
-                      )}
+                    )}
+                      
+                  </div>
                 </div>
-              </div>
-              <div className='text-center'>
-                {errorMessage && <h4 className='text-danger'>{errorMessage}</h4>}
+                <div className='text-center'>
+                  {errorMessage && <h4 className='text-danger'>{errorMessage}</h4>}
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </>
       )}
     </GoogleReCaptchaProvider>

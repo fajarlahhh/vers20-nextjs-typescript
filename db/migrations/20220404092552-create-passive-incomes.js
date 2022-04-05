@@ -9,16 +9,25 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       idAccount: {
-        type: Sequelize.BIGINT
+        type: Sequelize.BIGINT,
+        allowNull: false,
+        onUpdate: 'CASCADE',
+        references: {
+          model: 'Accounts',
+          key: 'id'
+        }
       },
       debet: {
-        type: Sequelize.DOUBLE
+        type: Sequelize.DOUBLE,
+        allowNull: false
       },
       credit: {
-        type: Sequelize.DOUBLE
+        type: Sequelize.DOUBLE,
+        allowNull: false
       },
       description: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,

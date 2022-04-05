@@ -20,7 +20,8 @@ const initAccounts = (sequelize, Types) =>{
       emailVerification: Types.TINYINT
     },{
       sequelize,
-      modelName: 'Accounts'
+      modelName: 'Accounts',
+      paranoid: true
     }
   );
   return Accounts;

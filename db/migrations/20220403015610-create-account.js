@@ -6,34 +6,55 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
-      },
-      uuid: {
-        type: Sequelize.UUID
-      },
-      username: {
-        type: Sequelize.STRING
-      },
-      email: {
-        type: Sequelize.STRING
-      },
-      password: {
-        type: Sequelize.STRING
-      },
-      idContract: {
-        type: Sequelize.STRING
-      },
-      type: {
-        type: Sequelize.TINYINT
-      },
-      idParent: {
         type: Sequelize.BIGINT
       },
+      uuid: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        unique: true
+      },
+      username: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      idContract: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Contracts',
+          key: 'id'
+        }
+      },
+      type: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      idParent: {
+        type: Sequelize.BIGINT,
+        onUpdate: 'CASCADE',
+        references: {
+          model: 'Accounts',
+          key: 'id'
+        }
+      },
       walletAddress: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull: false
       },
       emailVerification: {
-        type: Sequelize.TINYINT
+        type: Sequelize.TINYINT,
+        default: 0,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,
@@ -41,6 +62,9 @@ module.exports = {
       },
       updatedAt: {
         allowNull: false,
+        type: Sequelize.DATE
+      },
+      deletedAt: {
         type: Sequelize.DATE
       }
     });
