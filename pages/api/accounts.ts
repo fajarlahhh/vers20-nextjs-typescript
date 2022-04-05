@@ -1,5 +1,6 @@
 import Account from "../../db/models/accounts";
 import nextConnect from 'next-connect';
+import { Op } from "sequelize";
 
 export default nextConnect()
 .get(async (req: any, res: any)=> {
@@ -46,8 +47,13 @@ export default nextConnect()
 })
 .patch(async (req: any, res: any)=> {
     try {
+        console.log(req.body);
+        
         const account = await Account.update(req.body, {
-            where: { id: req.body.id }
+            where: { 
+                id: req.body.id
+            }, 
+            paranoid: false
         });
         res.status(200).json({ account });
     } catch (e: any) {

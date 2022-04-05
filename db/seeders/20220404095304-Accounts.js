@@ -6,7 +6,7 @@ module.exports = {
     await queryInterface.bulkInsert("Accounts", [
       {
         uuid: '5e21cd96-01ce-4840-892b-c417354d2fb8',
-        username: "Jon Doe",
+        username: "jondoe",
         email: "andifajarlah@gmail.com",
         password: bcrypt.hashSync('vers20', bcrypt.genSaltSync()),
         idContract: 5,

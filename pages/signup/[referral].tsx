@@ -127,7 +127,6 @@ const App = () => {
   const [contracts, setContracts] = useState([]);
   const [account, setAccount] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [aviorNeed, setAviorNeed] = useState(0);
   const [isValidToken, setIsValidToken] = useState(false);
   const [progress, setProgress] = useState('');
   const contractAbi = [
@@ -435,33 +434,41 @@ const App = () => {
   }, [referral, router.isReady, router.query]);
 
   const handleSubmit = async (fields: any) => {
-    setProgress('Please wait');
+    setErrorMessage('');
+
+    const contract: any = contracts?.find(q => q['id'] == fields.contract);
+    const aviorNeed: number = contract.value * aviorPrice;
+
+    setProgress(`Waiting for wallet response. You need ${aviorNeed} AVIOR to complete this process`);
     window.onbeforeunload = () => "Don't leave this page while sign up is on progress";
         
-    // const resAccount: any = await axios.post('/api/accounts', {
-    //   uuid: uuid(),
-    //   username: fields.username,
-    //   email: fields.email,
-    //   password: bcryptjs.hashSync(fields.password, bcryptjs.genSaltSync()),
-    //   idContract: fields.contract,
-    //   type: 1,
-    //   walletAddress: address,
-    //   emailVerification: 0,
-    //   deletedAt: new Date()
-    // });
-
-    // if (resAccount.data.message === 'The username already exists') {
-    //   setErrorMessage(resAccount.data.message);
-    //   setProgress('');
-    //   window.onbeforeunload = () => null;
-    //   return;
-    // }
+    const resAccount: any = await axios.post('/api/accounts', {
+      uuid: uuid(),
+      username: fields.username,
+      email: fields.email,
+      password: bcryptjs.hashSync(fields.password, bcryptjs.genSaltSync()),
+      idContract: fields.contract,
+      type: 1,
+      walletAddress: address,
+      emailVerification: 0,
+      deletedAt: new Date()
+    });
+    const resActive = await axios.patch('/api/accounts', {
+      id: 15,
+      deletedAt: null
+    });
+    if (resAccount.data.message === 'The username already exists') {
+      setErrorMessage(resAccount.data.message);
+      setProgress('');
+      window.onbeforeunload = () => null;
+      return;
+    }
 
     const web3Contract = new web3Provider.eth.Contract(contractAbi, aviorContract);
-    console.log(aviorContract);
+    
     await web3Contract.methods.transfer(adminWallet, web3Provider.utils.toWei(aviorNeed.toString(), 'ether')).send({
       from: address, gas: 100000}).on("transactionHash", function () {
-        setProgress('Hash created');
+        setProgress('Transaction submitted. Please wait for confirmation');
       })
       .on("receipt", function () {
         setProgress('Receipt created');
@@ -474,26 +481,21 @@ const App = () => {
         return;
       });
     
-    // if (!error) {
-    //   // const resActive = await axios.post('/api/accounts', {
-    //   //   id: resAccount.data.account.id,
-    //   //   deletedAt: null
-    //   // });
-
-    //   if (resActive.status === 200) {
-    //     router.push('/success')
-    //   }
-    // }
+    
+    if (errorMessage === '') {
+      const resActive = await axios.patch('/api/accounts', {
+        id: resAccount.data.account.id,
+        deletedAt: null
+      });
+      
+      if (resActive.status === 200) {
+        router.push('/signup/success')
+      }
+    }
 
     setProgress('');
     window.onbeforeunload = () => null;
   }
-
-  const avior = useCallback(
-    async (event: any) => {
-      console.log(event.target.value);
-    }, []
-  );
 
   const connect = useCallback(
     async () => {
@@ -589,12 +591,13 @@ const App = () => {
                 </div>
                 <div className='auth-form card mb-1'>
                   <div className='card-body'>
-                    {progress !== '' ? (
+                    {progress === '' ? (
                       <>
                         <div className='text-center'>
-                          <h2>Dont Close or Leave this browser tab</h2>
+                          <h4 className='text-warning'>Sign up in progress</h4>
+                          <small>Dont close this tab or close your browser!!!</small>
                           <hr />
-                          <h3 className='text-danger'>{progress}</h3>
+                          <strong>{progress}</strong>
                         </div>
                       </>
                     ): (
@@ -603,40 +606,40 @@ const App = () => {
                           <>
                             <Formik initialValues={initialValues(account)} validationSchema={SignupFormSchema} onSubmit={async (fields) => {
                               await handleSubmit(fields)
-                            } }>
-                              {({ errors, status, touched }) => (
+                            } } enableReinitialize>
+                              {({ errors, status, touched, values, isSubmitting, isValid }) => (
                                 <Form>
                                   <div>
                                     <div className='row'>
                                       <div className='col-12 mb-2'>
-                                          <label className='form-label'>Username</label>
-                                          <Field name='username' type='text' className={ 'form-control' + (errors.username && touched.username? ' is-invalid': '') } />
-                                          <ErrorMessage name='username' component='div' className='invalid-feedback' />
+                                        <label className='form-label'>Username</label>
+                                        <Field name='username' type='text' className={ 'form-control' + (errors.username && touched.username? ' is-invalid': '') } />
+                                        <ErrorMessage name='username' component='div' className='invalid-feedback' />
                                       </div>
                                       <div className='col-12 mb-2'>
-                                          <label className='form-label'>Email</label>
-                                          <Field name='email' type='email' className={ 'form-control' + (errors.email && touched.email? ' is-invalid': '') } />
-                                          <ErrorMessage name='email' component='div' className='invalid-feedback' />
+                                        <label className='form-label'>Email</label>
+                                        <Field name='email' type='email' className={ 'form-control' + (errors.email && touched.email? ' is-invalid': '') } />
+                                        <ErrorMessage name='email' component='div' className='invalid-feedback' />
                                       </div>
                                       <div className='col-12 mb-2'>
-                                          <label className='form-label'>Contract</label>
-                                          <Field name='contract' as='select' className={ 'form-control' + (errors.contract && touched.contract? ' is-invalid': '') } onChange={avior}>
-                                              <option value='' hidden>-- Select Contract --</option>
-                                              {contracts.map((contract) => (
-                                                <option value={contract['id']} key={contract['id']}>{contract['name']} - $ {contract['value']}</option>
-                                              ))}
-                                          </Field>
-                                          <ErrorMessage name='contract' component='div' className='invalid-feedback' />
+                                        <label className='form-label'>Contract</label>
+                                        <Field name='contract' as='select' className={ 'form-control' + (errors.contract && touched.contract? ' is-invalid': '') }>
+                                            <option value='' hidden>-- Select Contract --</option>
+                                            {contracts.map((contract) => (
+                                              <option value={contract['id']} key={contract['id']}>$ {contract['value']}</option>
+                                            ))}
+                                        </Field>
+                                        <ErrorMessage name='contract' component='div' className='invalid-feedback' />
                                       </div>
                                       <div className='col-12 mb-2'>
-                                          <label className='form-label'>Password</label>
-                                          <Field name='password' type='password' className={ 'form-control' + (errors.password && touched.password? ' is-invalid': '') } />
-                                          <ErrorMessage name='password' component='div' className='invalid-feedback' />
+                                        <label className='form-label'>Password</label>
+                                        <Field name='password' type='password' className={ 'form-control' + (errors.password && touched.password? ' is-invalid': '') } />
+                                        <ErrorMessage name='password' component='div' className='invalid-feedback' />
                                       </div>
                                       <div className='col-12 mb-2'>
-                                          <label className='form-label'>Referral</label>
-                                          <Field name='referral' type='text' readOnly className={ 'form-control' + (errors.referral && touched.referral? ' is-invalid': '') } />
-                                          <ErrorMessage name='referral' component='div' className='invalid-feedback' />
+                                        <label className='form-label'>Referral</label>
+                                        <Field name='referral' type='text' readOnly className={ 'form-control' + (errors.referral && touched.referral? ' is-invalid': '') } />
+                                        <ErrorMessage name='referral' component='div' className='invalid-feedback' />
                                       </div>
                                       <div className='col-12'>
                                         <div className='form-check'>
@@ -648,8 +651,8 @@ const App = () => {
                                       </div>
                                     </div>
                                     <div className='mt-3 d-grid gap-2'>
-                                      <button type='submit' className='btn btn-primary mr-2'>
-                                        Sign Up
+                                      <button type='submit' className='btn btn-primary mr-2' disabled={!isValid || isSubmitting}>
+                                        {isSubmitting ? 'Loading..' : `Sign Up Now` }
                                       </button>
                                     </div>
                                     <div className='mt-3 d-grid gap-2'>
