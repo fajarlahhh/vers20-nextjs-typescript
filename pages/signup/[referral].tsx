@@ -11,8 +11,7 @@ import { ErrorMessage, Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useRouter } from 'next/router';
 import { v4 as uuid } from "uuid";
-import { bcrypt } from "bcryptjs";
-
+import bcrypt from "bcrypt";
 
 const providerOptions = {
   walletconnect: {
@@ -119,11 +118,13 @@ const SignupFormSchema = Yup.object().shape({
   acceptTerms: Yup.bool().oneOf([true], 'Accept Ts & Cs is required'),
 });
 
-const SignUp = (props: any) => {
+const App = () => {
+  const router = useRouter();
+  const[referral, setReferral] = useState(router.query['referral']);
   const [state, dispatch] = useReducer(reducer, initialState)
   const { provider, web3Provider, address, chainId } = state
   const [contracts, setContracts] = useState([]);
-  const [accounts, setAccounts] = useState('');
+  const [account, setAccount] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isValidToken, setIsValidToken] = useState(false);
 
@@ -135,32 +136,42 @@ const SignUp = (props: any) => {
   };
 
   useEffect(() => {
-    axios.get('/api/contracts/').then(({ data }) => {
-      setContracts(data.contract);
-    }).catch((error) => {
-      let message;
-      if (error.response) {
-        message = error.response.data.message;
-      } else {
-        message = error.message;
-      }
-      setErrorMessage(message);
-    })
-  }, []);
-  
-  useEffect(() => {
-    axios.get('/api/accounts/', { params : { uuid : '123456' }}).then(({ data }) => {
-      setAccounts(data.account.username);
-    }).catch((error) => {
-      let message;
-      if (error.response) {
-        message = error.response.data.message;
-      } else {
-        message = error.message;
-      }
-      setErrorMessage(message);
-    })
-  }, []);
+    if(!router.isReady) return;
+    setReferral(router.query['referral']);
+    if(!referral) return;
+
+    async function getCrontracts() {
+      await axios.get('/api/contracts/').then(({ data }) => {
+        setContracts(data.contract);
+      }).catch((error) => {
+        let message;
+        if (error.response) {
+          message = error.response.data.message;
+        } else {
+          message = error.message;
+        }
+        setErrorMessage(message);
+      })
+    }
+
+    async function getReferral() {
+      axios.get('/api/accounts/', { params : { uuid : referral }}).then(({ data }) => {
+        setAccount(data.account.username);
+      }).catch((error) => {
+        let message;
+        if (error.response) {
+          message = error.response.data.message;
+        } else {
+          message = error.message;
+        }
+        setErrorMessage(message);
+      })
+    }
+
+    getCrontracts();
+
+    getReferral();
+  }, [referral, router.isReady, router.query]);
 
   const connect = useCallback(
     async () => {
@@ -237,8 +248,8 @@ const SignUp = (props: any) => {
   }, [provider, disconnect])
 
   return (
-    <div>
-    <GoogleReCaptcha onVerify={(token) => handleReCaptchaVerify(token) } />
+    <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY}>
+      <GoogleReCaptcha onVerify={(token) => handleReCaptchaVerify(token) } />
       {isValidToken && (
         <>
         <div className='container'>
@@ -251,39 +262,29 @@ const SignUp = (props: any) => {
                   </a>
                 </Link>
                 <h4 className='card-title '>
-                  Sign Up {accounts}
+                  Sign Up
                 </h4>
               </div>
               <div className='auth-form card mb-1'>
                 <div className='card-body'>
                     {web3Provider ? (
                       <>
-                        <Formik initialValues={initialValues(accounts)} validationSchema={SignupFormSchema} onSubmit={async (fields) => {
-                          alert(bcrypt.hashSync(fields.password, salt));
-                          // const res = await axios.post('/api/accounts', {
-                          //   uuid: uuid(),
-                          //   username: fields.username,
-                          //   email: fields.email,
-                          //   password: ,
-                          //   id_contract
-                          //   type
-                          //   id_parent
-                          //   wallet_address
-                          //   email_verification
-                          // });
-
-                          axios.get('/api/contracts/').then(({ data }) => {
-                            setContracts(data.contract);
-                          }).catch((error) => {
-                            let message;
-                            if (error.response) {
-                              message = error.response.data.message;
-                            } else {
-                              message = error.message;
-                            }
-                            setErrorMessage(message);
-                          })
-                          alert(JSON.stringify(fields, null, 4));
+                        <Formik initialValues={initialValues(account)} validationSchema={SignupFormSchema} onSubmit={async (fields) => {
+                          const res = await axios.post('/api/accounts', {
+                            uuid: uuid(),
+                            username: fields.username,
+                            email: fields.email,
+                            password: bcrypt.hash(fields.password, 10, function (err:any, hash: string) {
+                              if (err) return next(err);
+                              fields.password = hash;
+                              next();
+                            }),
+                            id_contract
+                            type
+                            id_parent
+                            wallet_address
+                            email_verification
+                          });
                         } }>
                           {({ errors, status, touched }) => (
                             <Form>
@@ -361,17 +362,6 @@ const SignUp = (props: any) => {
         </div>
         </>
       )}
-    </div>
-  )
-}
-
-const App = () => {
-  const router = useRouter();
-  const { referral } = router.query;
-  
-  return(    
-    <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY}>
-      <SignUp referral={referral}/>
     </GoogleReCaptchaProvider>
   )
 }

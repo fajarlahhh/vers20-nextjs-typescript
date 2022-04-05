@@ -1,4 +1,4 @@
-import Account from "../../db/models/account";
+import Account from "../../db/models/accounts";
 import nextConnect from 'next-connect';
 
 export default nextConnect()
@@ -22,13 +22,17 @@ export default nextConnect()
 })
 .post(async (req: any, res: any)=> {
     try {
-        const { uuid } = req.query;
+        const { uuid, username, email, password, idContract, idParent, walletAddress } = req.query;
         
         const account = await Account.create({
-            title,
-            content,
-            status: 1,
-            userId: user.id,
+            uuid: uuid,
+            username: username,
+            email: email,
+            password: password,
+            idContract: idContract,
+            idParent: idParent,
+            walletAddress: walletAddress,
+            emailVerification: 0
           });
         res.status(200).json({ account });
     } catch (e: any) {

@@ -1,4 +1,4 @@
-import Contract from "../../db/models/contract";
+import Contract from "../../db/models/contracts";
 
 export default async function handler(req: any, res: any) {
     try {

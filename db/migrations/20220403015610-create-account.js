@@ -9,7 +9,7 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       uuid: {
-        type: Sequelize.STRING
+        type: Sequelize.UUID
       },
       username: {
         type: Sequelize.STRING
@@ -20,30 +20,28 @@ module.exports = {
       password: {
         type: Sequelize.STRING
       },
-      id_contract: {
+      idContract: {
         type: Sequelize.STRING
       },
       type: {
         type: Sequelize.TINYINT
       },
-      id_parent: {
+      idParent: {
         type: Sequelize.BIGINT
       },
-      wallet_address: {
+      walletAddress: {
         type: Sequelize.STRING
       },
-      email_verification: {
+      emailVerification: {
         type: Sequelize.TINYINT
       },
-      created_at: {
+      createdAt: {
         allowNull: false,
-        type: Sequelize.DATE,
-        defultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+        type: Sequelize.DATE
       },
-      updated_at: {
+      updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE,
-        defultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+        type: Sequelize.DATE
       }
     });
   },

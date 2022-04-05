@@ -1,6 +1,6 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('contracts', {
+    await queryInterface.createTable('Contracts', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -16,34 +16,32 @@ module.exports = {
       profit: {
         type: Sequelize.INTEGER
       },
-      amount_per_withdrawal: {
+      amountPerWithdrawal: {
         type: Sequelize.DOUBLE
       },
-      sponsorship_benefits: {
+      sponsorshipBenefits: {
         type: Sequelize.DOUBLE
       },
-      level_1_benefits: {
+      firstLevelBenefits: {
         type: Sequelize.DOUBLE
       },
-      level_2_benefits: {
+      secondLevelBenefits: {
         type: Sequelize.DOUBLE
       },
-      level_3_benefits: {
+      thirdLevelBenefits: {
         type: Sequelize.DOUBLE
       },
-      created_at: {
+      createdAt: {
         allowNull: false,
-        type: Sequelize.DATE,
-        defultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+        type: Sequelize.DATE
       },
-      updated_at: {
+      updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE,
-        defultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+        type: Sequelize.DATE
       }
     });
   },
   async down(queryInterface) {
-    await queryInterface.dropTable('contracts');
+    await queryInterface.dropTable('Contracts');
   }
 };
