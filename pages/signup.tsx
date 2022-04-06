@@ -121,7 +121,7 @@ const SignupFormSchema = Yup.object().shape({
 
 const App = () => {
   const router = useRouter();
-  const [referral, setReferral] = useState(router.query['referral']);
+  const [referral, setReferral] = useState(router.query['ref']);
   const [state, dispatch] = useReducer(reducer, initialState)
   const { provider, web3Provider, address, chainId } = state
   const [contracts, setContracts] = useState([]);
@@ -402,7 +402,7 @@ const App = () => {
 
   useEffect(() => {
     if(!router.isReady) return;
-    setReferral(router.query['referral']);
+    setReferral(router.query['ref']);
     if(!referral) return;
 
     async function getCrontracts() {
@@ -437,6 +437,7 @@ const App = () => {
   }, [referral, router.isReady, router.query]);
 
   const handleSubmit = async (fields: any) => {
+    let error = '';
     const resAccount: any = await axios.post('/api/accounts', {
       uuid: uuid(),
       username: fields.username,
@@ -457,7 +458,8 @@ const App = () => {
     window.onbeforeunload = () => "Don't leave this page while sign up is on progress";
     
     if (resAccount.data.message === 'The username already exists') {
-      setErrorMessage(resAccount.data.message);
+      error = resAccount.data.message;
+      setErrorMessage(error);
       setProgress('');
       window.onbeforeunload = () => null;
       return;
@@ -472,16 +474,16 @@ const App = () => {
       .on("receipt", function () {
         setProgress('Receipt created');
       })
-      .on("error", async function (error: any) {
-        console.log(error);
-        setErrorMessage(error);
+      .on("error", async function (e: any) {
+        error = e;
+        setErrorMessage(e);
         setProgress('');
         // window.onbeforeunload = () => null;
         return;
       });
       console.log('errorMessage = ' +errorMessage);
     
-    if (errorMessage == '') {
+    if (error === '') {
       const resActive = await axios.patch('/api/accounts', {
         id: resAccount.data.account.id,
         deletedAt: null
@@ -584,11 +586,12 @@ const App = () => {
                       <Image src='/images/logo.png' height={86} width={200} alt='Logo'/>
                     </a>
                   </Link>
-                  <h4 className='card-title '>
+                  <h4 className='card-title mb-1'>
                     Sign Up
                   </h4>
+                  {errorMessage && <h5 className='text-danger'>{errorMessage}</h5>}
                 </div>
-                <div className='auth-form card mb-1'>
+                <div className='auth-form card mb-1 pt-1'>
                   <div className='card-body'>
                     {progress !== '' ? (
                       <>
@@ -604,7 +607,7 @@ const App = () => {
                         {web3Provider ? (
                           <>
                             <Formik initialValues={initialValues(account)} validationSchema={SignupFormSchema} onSubmit={async (fields) => {
-                              setErrorMessage('');
+                              await setErrorMessage('');
                               await handleSubmit(fields);
                             } } enableReinitialize>
                               {({ errors, status, touched, values, isSubmitting, isValid }) => (
@@ -674,11 +677,7 @@ const App = () => {
                         )}
                       </>
                     )}
-                      
                   </div>
-                </div>
-                <div className='text-center'>
-                  {errorMessage && <h4 className='text-danger'>{errorMessage}</h4>}
                 </div>
               </div>
             </div>
